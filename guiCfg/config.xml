@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<config> 
+  <GUIRunner> 
+    <MainWindow> 
+      <Width>733</Width>  
+      <Height>600</Height>  
+      <PosX>0</PosX>  
+      <PosY>23</PosY>  
+      <SplitterPos>400</SplitterPos> 
+    </MainWindow>  
+    <ProgressWindow> 
+      <PosX>0</PosX>  
+      <PosY>23</PosY> 
+    </ProgressWindow> 
+  </GUIRunner> 
+</config>

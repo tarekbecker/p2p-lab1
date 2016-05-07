@@ -1,0 +1,118 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Configuration xmlns:xi="http://www.w3.org/2001/XInclude">
+
+	<Description>
+		Simple Testing-Config
+	</Description>
+
+	<Default>
+		<Variable name="seed" value="500" />
+		<Variable name="finishTime" value="1h" />
+		<Variable name="actions" value="config/flooding/simpleFlooding.dat" />
+	</Default>
+
+	<SimulatorCore class="de.tud.kom.p2psim.impl.simengine.Simulator"
+		static="getInstance" seed="$seed" finishAt="$finishTime" realTime="false" />
+		
+	
+	<Topology class="de.tud.kom.p2psim.impl.topology.TopologyFactory" worldX="100" worldY="100">
+       	<Placement class="de.tud.kom.p2psim.impl.topology.placement.GridPositionDistribution" />
+ 		<View class="de.tud.kom.p2psim.impl.topology.views.CloudTopologyView" phy="ETHERNET">
+ 			<Latency class="de.tud.kom.p2psim.impl.topology.views.latency.StaticLatency" latency="100ms" variance="50ms" />
+			<DropRate class="de.tud.kom.p2psim.impl.topology.views.droprate.StaticDropRate" dropRate="0" />
+ 		</View>
+ 	</Topology>
+ 	
+ 	<LinkLayer class="de.tud.kom.p2psim.impl.linklayer.LinkLayerFactory" />
+ 	
+ 	<NetLayer class="de.tud.kom.p2psim.impl.network.routed.RoutedNetLayerFactory" enableFragmenting="false">
+ 		<Routing class="de.tud.kom.p2psim.impl.network.routed.config.Routing" phy="ETHERNET" algorithm="GLOBAL_KNOWLEDGE" protocol="IPv4" />
+ 	</NetLayer>
+	
+	<TransLayer class="de.tud.kom.p2psim.impl.transport.modular.ModularTransLayerFactory" />
+
+	<Tracker
+ 		class="de.tudarmstadt.maki.simonstrator.overlay.flooding.FloodingNodeFactory" 
+ 		factoryType="TRACKER">
+	</Tracker>
+	
+	<Overlay
+ 		class="de.tudarmstadt.maki.simonstrator.overlay.flooding.FloodingNodeFactory" 
+ 		factoryType="PEER">
+	</Overlay>
+	
+
+	<Monitor class="de.tud.kom.p2psim.impl.common.DefaultMonitor" static="getInstance" 
+		start="0m" stop="$finishTime" experimentDescription="Flooding">
+		<Analyzer class="de.tud.kom.p2psim.impl.analyzer.metric.MetricAnalyzer">
+
+		<Metric class="de.tudarmstadt.maki.simonstrator.peerfact.analyzer.metric.MPeerStatus$PeersArriving" />
+		
+		<!-- Metrics for Traffic -->
+			<Metric class="de.tudarmstadt.maki.simonstrator.peerfact.analyzer.metric.MMessages$Count" type="Trans" reason="Receive" perHost="true" />
+			<Metric class="de.tudarmstadt.maki.simonstrator.peerfact.analyzer.metric.MMessages$Count" type="Trans" reason="Send" perHost="true" />
+		
+		<!-- Metrics for Overlay Traffic -->
+			<Metric class="de.tudarmstadt.maki.simonstrator.peerfact.analyzer.metric.MMessages$Count" type="Overlay" reason="Receive" perHost="true" />
+			<Metric class="de.tudarmstadt.maki.simonstrator.peerfact.analyzer.metric.MMessages$Count" type="Overlay" reason="Send" perHost="true" />
+		
+		
+		<!-- One DELTA-sampling Filter used for all metrics, for performance reasons -->
+			<Filter class="de.tud.kom.p2psim.impl.analyzer.metric.filter.IntervalDeltaFilter" intervalLength="1m" prefix="Delta" 
+				whitelist="CountTransReceive;CountTransSend;CountOverlayReceive;CountOverlaySend;PeersArriving" /> 
+				
+		<!-- Statistics-Filter for the Visualization -->
+			<Filter class="de.tud.kom.p2psim.impl.analyzer.metric.filter.StatisticsFilter$Avg" 
+				whitelist="Delta_CountTransReceive;Delta_CountTransSend;Delta_CountOverlayReceive;Delta_CountOverlaySend;Delta_PeersArriving" />
+			<Filter class="de.tud.kom.p2psim.impl.analyzer.metric.filter.StatisticsFilter$Percentile"
+				percentile="75" whitelist="Delta_CountTransReceive;Delta_CountTransSend;Delta_CountOverlayReceive;Delta_CountOverlaySend;Delta_PeersArriving" />
+			<Filter class="de.tud.kom.p2psim.impl.analyzer.metric.filter.StatisticsFilter$Percentile" 
+				percentile="25" whitelist="Delta_CountTransReceive;Delta_CountTransSend;Delta_CountOverlayReceive;Delta_CountOverlaySend;Delta_PeersArriving" />
+			<Filter class="de.tud.kom.p2psim.impl.analyzer.metric.filter.StatisticsFilter$Min" 
+				whitelist="Delta_CountTransReceive;Delta_CountTransSend;Delta_CountOverlayReceive;Delta_CountOverlaySend;Delta_PeersArriving" />
+			<Filter class="de.tud.kom.p2psim.impl.analyzer.metric.filter.StatisticsFilter$Max" 
+				whitelist="Delta_CountTransReceive;Delta_CountTransSend;Delta_CountOverlayReceive;Delta_CountOverlaySend;Delta_PeersArriving" />
+			
+			<Output class="de.tud.kom.p2psim.impl.analyzer.metric.output.MetricOutputLivePlot" 
+				whitelist="Delta_CountTransReceive;Delta_CountTransSend;Delta_CountOverlayReceive;Delta_CountOverlaySend;Delta_PeersArriving" 
+				upperPercentile="75" lowerPercentile="25" enableCDF="false" samplingInterval="1m" />
+					
+		</Analyzer>
+	</Monitor>
+
+
+	<HostBuilder class="de.tud.kom.p2psim.impl.scenario.DefaultHostBuilder"
+		experimentSize="51">
+
+		<Host groupID="T">
+			<Topology />
+			<LinkLayer>
+				<Mac class="de.tud.kom.p2psim.impl.linklayer.mac.configs.SimpleMac"
+					phy="ETHERNET" trafficQueueSize="100" downBandwidth="53665Kbps"
+					upBandwidth="3150Kbps" />
+			</LinkLayer>
+			<NetLayer upBandwidth="3150Kbps" downBandwidth="53665Kbps" />
+			<TransLayer />
+			<Tracker />
+			<Properties enableChurn="false" />
+		</Host>
+
+		<Group groupID="G1" size="50">
+			<Topology />
+			<LinkLayer>
+				<Mac class="de.tud.kom.p2psim.impl.linklayer.mac.configs.SimpleMac"
+					phy="ETHERNET" trafficQueueSize="100" downBandwidth="53665Kbps"
+					upBandwidth="3150Kbps" />
+			</LinkLayer>
+			<NetLayer upBandwidth="3150Kbps" downBandwidth="53665Kbps" />
+			<TransLayer />
+			<Overlay />
+			<Properties enableChurn="false" />
+		</Group>
+	</HostBuilder>
+
+
+	<Scenario class="de.tud.kom.p2psim.impl.scenario.CSVScenarioFactory"
+		actionsFile="$actions"
+		componentClass="de.tudarmstadt.maki.simonstrator.overlay.flooding.FloodingNode" />
+</Configuration>
