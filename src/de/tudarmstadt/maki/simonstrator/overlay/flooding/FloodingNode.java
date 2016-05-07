@@ -30,7 +30,7 @@ import org.apache.commons.collections.set.SynchronizedSet;
 public class FloodingNode extends AbstractOverlayNode implements
  TransMessageListener, IPeerStatusListener {
 
-  private final boolean FLAG_LAST_TASK = false;
+  public static final boolean FLAG_LAST_TASK = false;
 
   public static final List<FloodingNode> allNodes = Collections.synchronizedList(new LinkedList<FloodingNode>());
   private static final Random random = new Random();
