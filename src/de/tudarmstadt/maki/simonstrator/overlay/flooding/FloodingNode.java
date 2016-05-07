@@ -30,11 +30,15 @@ import org.apache.commons.collections.set.SynchronizedSet;
 public class FloodingNode extends AbstractOverlayNode implements
  TransMessageListener, IPeerStatusListener {
 
+  private final boolean FLAG_LAST_TASK = false;
+
   public static final List<FloodingNode> allNodes = Collections.synchronizedList(new LinkedList<FloodingNode>());
-  public static final Random random = new Random();
+  private static final Random random = new Random();
 
   public Semaphore acceptIngoingConnections;
+  public Semaphore acceptIngoingConnectionsAccepted = new Semaphore(0);
   public Semaphore establishOutgoingConnections;
+  public Semaphore establishOutgoingConnectionsAccepted = new Semaphore(0);
 
   public Semaphore maxConnectionAttempts;
 
@@ -66,7 +70,7 @@ public class FloodingNode extends AbstractOverlayNode implements
 	/**
 	 * Connected neighbors of the node
 	 */
-	private Set<FloodingContact> connectedNeighbors = Collections.synchronizedSet(new LinkedHashSet<FloodingContact>());
+	public Set<FloodingContact> connectedNeighbors = Collections.synchronizedSet(new LinkedHashSet<FloodingContact>());
 
 	/**
 	 * The operation that does maintenance of the connections etc.
@@ -99,8 +103,8 @@ public class FloodingNode extends AbstractOverlayNode implements
           establishOutgoingConnections.release();
         }
       }
+      maxConnectionAttempts = new Semaphore(count * 100);
     }
-    maxConnectionAttempts = new Semaphore(count * 10);
   }
 
   public boolean leaseOutgoingConnection() {
@@ -121,7 +125,9 @@ public class FloodingNode extends AbstractOverlayNode implements
         }
       }
       if (fc != null) {
-        getTransport().send(new ConnectPeersMessage(localContact), fc.getNetID(), FloodingNodeFactory.DEFAULT_NODE_PORT);
+        getTransport().send(new ConnectPeersMessage(localContact, connectedNeighbors), fc.getNetID(), FloodingNodeFactory.DEFAULT_NODE_PORT);
+      } else {
+        establishOutgoingConnections.release();
       }
     } else {
       establishOutgoingConnections.release();
@@ -166,11 +172,23 @@ public class FloodingNode extends AbstractOverlayNode implements
           .send(new ConnectPeersMessageAnswer(this.localContact, result),
               sender.getNetId(), FloodingNodeFactory.DEFAULT_NODE_PORT);
       if (result) {
+        acceptIngoingConnectionsAccepted.release();
         connectedNeighbors.add(((ConnectPeersMessage) msg).getSenderContact());
+      }
+      if (FLAG_LAST_TASK) {
+        synchronized (potentialNeighbors) {
+          Set<FloodingContact> newContact = new HashSet<>();
+          for (FloodingContact fc : ((ConnectPeersMessage) msg).getNeighbors()) {
+            newContact.add(fc);
+          }
+          newContact.removeAll(connectedNeighbors);
+          potentialNeighbors.addAll(newContact);
+        }
       }
 		} else if (msg instanceof ConnectPeersMessageAnswer) {
       ConnectPeersMessageAnswer cpma = (ConnectPeersMessageAnswer) msg;
       if (cpma.isAccept()) {
+        establishOutgoingConnectionsAccepted.release();
         connectedNeighbors.add(cpma.getSenderContact());
       } else {
         connectToSomeone();

@@ -44,18 +44,27 @@ public class GUIRunner {
 			@Override
 			public synchronized void run() {
 				try {
-					Thread.sleep(1000 * 50);
+					Thread.sleep(1000 * 10);
 					System.out.println("Start printing");
+					long total = 0;
 					for (FloodingNode fn : FloodingNode.allNodes) {
-						StringBuilder sb = new StringBuilder(fn.getLocalOverlayContact().getNodeID().valueAsString());
+						total += fn.connectedNeighbors.size();
+						StringBuilder sb = new StringBuilder();
+						sb.append(String.format("%2d", fn.getLocalOverlayContact().getNodeID().value()));
+						sb.append(":");
 						for(FloodingContact fc: fn.getConnectedNeighbors()) {
 							sb.append(" ");
-							sb.append(fc.getNodeID().valueAsString());
+							sb.append(String.format("%2d", fc.getNodeID().value()));
 						}
-						sb.append(String.format("\t\t[%2d %2d %2d]", fn.acceptIngoingConnections.availablePermits(),
-								fn.establishOutgoingConnections.availablePermits(), fn.maxConnectionAttempts.availablePermits()));
-						System.out.println(sb.toString());
+						System.out.printf("%-20s %s (%d)\n", sb.toString(), String.format("\t\t[%02d (%02d) %02d (%02d) %03d]",
+								fn.acceptIngoingConnections.availablePermits(),
+								fn.acceptIngoingConnectionsAccepted.availablePermits(),
+								fn.establishOutgoingConnections.availablePermits(),
+								fn.establishOutgoingConnectionsAccepted.availablePermits(),
+								fn.maxConnectionAttempts.availablePermits()),
+								fn.connectedNeighbors.size());
 					}
+					System.out.printf("Average number of connections: %.3f\n", (((double) total) / FloodingNode.allNodes.size()));
 					System.out.println("finished");
 				} catch (InterruptedException e) {
 					e.printStackTrace();

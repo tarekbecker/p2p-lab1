@@ -62,8 +62,8 @@ public class MaintenanceOperation extends
 		// Remove all already connected neighbors
 		potentialNeighbors.removeAll(alreadyConnected);
 
-		Monitor.log(MaintenanceOperation.class, Monitor.Level.DEBUG, node + ": Currently there are " + alreadyConnected.size()
-		 + " peers connected, " + potentialNeighbors.size() + " potential neighbors.");
+		//Monitor.log(MaintenanceOperation.class, Monitor.Level.DEBUG, node + ": Currently there are " + alreadyConnected.size()
+		// + " peers connected, " + potentialNeighbors.size() + " potential neighbors.");
 
     node.setBudget(maxNumConnections);
 
@@ -73,13 +73,8 @@ public class MaintenanceOperation extends
 		 */
 
     // Send a message to another peer
-    while(node.leaseOutgoingConnection()) {
-      (new Thread() {
-        @Override
-        public void run() {
-          node.connectToSomeone();
-        }
-      }).start();
+    while(node.maxConnectionAttempts.tryAcquire() && node.leaseOutgoingConnection()) {
+        node.connectToSomeone();
     }
 	}
 
